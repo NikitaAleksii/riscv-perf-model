@@ -16,9 +16,71 @@ enum class Category
     ALU
 };
 
-// Returns a category for a given instruction encoding 
+Category categorize_reduced(uint32_t encoding)
+{
+    uint32_t quadrant{encoding & 0b11};
+    uint32_t funct3{(encoding >> 13) & 0b111};
+
+    if (quadrant == 0)
+    {
+        switch (funct3)
+        {
+        case 0b010:
+        case 0b011:
+            return Category::LOAD; // c.lw, c.ld
+        case 0b110:
+        case 0b111:
+            return Category::STORE; // c.sw, c.sd
+        }
+    }
+    else if (quadrant == 1)
+    {
+        switch (funct3)
+        {
+        case 0b101:
+            return Category::JAL; // c.j
+        case 0b110:
+        case 0b111:
+            return Category::BRANCH; // c.beqz, c.bnez
+        default:
+            return Category::ALU;
+        }
+    }
+    else
+    {
+        switch (funct3)
+        {
+        case 0b010:
+        case 0b011:
+            return Category::LOAD; // c.lwsp, c.ldsp
+        case 0b110:
+        case 0b111:
+            return Category::STORE; // c.swsp, c.sdsp
+
+        case 0b100:
+        {
+            // Q2 funct3=4: mixed bucket
+            uint32_t rs2 = (encoding >> 2) & 0b11111;
+            if (rs2 == 0)
+            {
+                return Category::JALR; // c.jr or c.jalr (ignoring c.ebreak edge case)
+            }
+            return Category::ALU; // c.mv or c.add
+        }
+        default:
+            return Category::ALU;
+        }
+    }
+    return Category::ALU;
+}
+// Returns a category for a given instruction encoding
 Category categorize_by_opcode(uint32_t encoding)
 {
+    if ((encoding & 0b11) != 3)
+    {
+        return categorize_reduced(encoding);
+    }
+
     uint32_t opcode = encoding & 0b1111111;
     switch (opcode)
     {
@@ -69,7 +131,7 @@ int main(int argc, char *argv[])
             ss >> tok;
         }
 
-        // If the read failed, skip to the next iteration 
+        // If the read failed, skip to the next iteration
         if (!(ss >> tok))
             continue;
 
@@ -84,27 +146,33 @@ int main(int argc, char *argv[])
         switch (cat)
         {
         case Category::LOAD:
-            load+=1; break;
+            load += 1;
+            break;
         case Category::STORE:
-            store+=1; break;
+            store += 1;
+            break;
         case Category::BRANCH:
-            branch+=1; break;
+            branch += 1;
+            break;
         case Category::JAL:
-            jal+=1; break;
+            jal += 1;
+            break;
         case Category::JALR:
-            jalr+=1; break;
+            jalr += 1;
+            break;
         default:
-            alu+=1; break;
+            alu += 1;
+            break;
         }
         counter += 1;
     }
 
     std::cout << "There are " << counter << " instructions." << "\n";
-    std::cout << "There are " << load << " load instructions. " << (static_cast<double>(load*100)/counter) << "%\n";
-    std::cout << "There are " << store << " store instructions. " << (static_cast<double>(store*100)/counter) << "%\n";
-    std::cout << "There are " << branch << " branch instructions. " << (static_cast<double>(branch*100)/counter) << "%\n";
-    std::cout << "There are " << jal << " jal instructions. " << (static_cast<double>(jal*100)/counter) <<  "%\n";
-    std::cout << "There are " << jalr << " jalr instructions. " << (static_cast<double>(jalr*100)/counter) << "%\n";
-    std::cout << "There are " << alu << " alu instructions. " << (static_cast<double>(alu*100)/counter) << "%\n";
+    std::cout << "There are " << load << " load instructions. " << (static_cast<double>(load * 100) / counter) << "%\n";
+    std::cout << "There are " << store << " store instructions. " << (static_cast<double>(store * 100) / counter) << "%\n";
+    std::cout << "There are " << branch << " branch instructions. " << (static_cast<double>(branch * 100) / counter) << "%\n";
+    std::cout << "There are " << jal << " jal instructions. " << (static_cast<double>(jal * 100) / counter) << "%\n";
+    std::cout << "There are " << jalr << " jalr instructions. " << (static_cast<double>(jalr * 100) / counter) << "%\n";
+    std::cout << "There are " << alu << " alu instructions. " << (static_cast<double>(alu * 100) / counter) << "%\n";
     return 0;
 }
