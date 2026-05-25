@@ -87,8 +87,18 @@ See `tests/spike_harness.c` for the minimal main + empty board-function stubs th
 python3 scripts/normalize_trace.py traces/aha-mont64.log traces/aha-mont64.norm
 ```
 
+Traces include C-runtime initialization (`__libc_init_array`, newlib
+setup, atexit handlers) before `main()` runs — typically ~140k instructions.
+The normalizer does not strip this; the runtime is part of how programs
+actually execute. For Embench benchmarks, dilute this fixed overhead by
+increasing `GLOBAL_SCALE_FACTOR` at compile time (e.g., `-DGLOBAL_SCALE_FACTOR=10`),
+which makes the benchmark's hot path repeat enough times that the runtime
+becomes a small fraction of the total trace.
+
 Output format: one line per user-space instruction with fields `PC TYPE OPCODE DST SRC1 SRC2 TAKEN MEM_ADDR`. Kernel-space (pk) instructions are filtered.
 
 ## Benchmarks
 
 This project uses [Embench-IoT](https://github.com/embench/embench-iot) (GPL-3.0) as a git submodule under `benchmarks/embench-iot/`. The submodule contains Embench's source code under its own license; this project's code remains MIT.
+
+Run `bash normalize_all.sh` to generate and normalize some of the embench traces.
