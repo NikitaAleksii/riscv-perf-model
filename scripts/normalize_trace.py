@@ -181,14 +181,14 @@ def decode_sources(encoding, opcode):
     return [rs1, rs2, dst]
 
 
-def normalize(path):
+def normalize(path_r, path_w):
     """
     Normalizes the compact log into
     PC, TYPE, OPCODE, DST, SRC1, SRC2, TAKEN, MEM_ADDR(-)
     """
 
     # Read the file and split into lines
-    with open(path, 'r') as in_file:
+    with open(path_r, 'r') as in_file, open(path_w, 'w') as out_file:
         prev = None
         # Parse and decode each line into its corresponding fields
         for line in in_file:
@@ -214,13 +214,13 @@ def normalize(path):
             width = 2 if (encoding & 0b11) != 3 else 4
             if prev is not None:
                 taken = compute_taken(prev, pc_int)
-                emit(prev, taken)
+                emit(out_file, prev, taken)
 
             prev = (pc, instr_type, encoding, dst, rs1, rs2, width, pc_int)
 
         # Flush the last instruction
         if prev is not None:
-            emit(prev, taken="-")
+            emit(out_file, prev, taken="-")
 
 
 def compute_taken(prev, next_pc):
@@ -234,17 +234,18 @@ def compute_taken(prev, next_pc):
     return "N"              # Branch is not taken
 
 
-def emit(prev, taken):
-    """Emits instruction"""
+def emit(out_file, prev, taken):
+    """Emits a normalized instruction into the output file"""
     pc, instr_type, encoding, dst, rs1, rs2, width, pc_int = prev
-    print(f"{pc} {instr_type} 0x{encoding:08x} {dst} {rs1} {rs2} {taken} -")
+    out_file.write(f"{pc} {instr_type} 0x{encoding:08x} {dst} {rs1} {rs2} {taken} -\n")
 
 
 def main():
-    if len(sys.argv) <= 1:
-        raise ValueError(f"Usage: {sys.argv[0]} <trace_file>")
-    path = sys.argv[1]
-    normalize(path)
+    if len(sys.argv) <= 2:
+        raise ValueError(f"Usage: {sys.argv[0]} <trace_file> <output_file>")
+    path_r = sys.argv[1]
+    path_w = sys.argv[2]
+    normalize(path_r, path_w)
 
 
 if __name__ == "__main__":
