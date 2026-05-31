@@ -79,7 +79,7 @@ riscv64-unknown-elf-gcc \
     -o aha-mont64.elf
 ```
 
-See `tests/spike_harness.c` for the minimal main + empty board-function stubs that replace Embench's normal harness.
+See `tests/embench_main.c` for the minimal main + empty board-function stubs that replace Embench's normal harness.
 
 ### Normalize a trace
 
