@@ -25,16 +25,17 @@ struct Stats {
  *
  * Gets the benchmark name from @p file_norm by stripping the directory
  * prefix and file extension, then writes a JSON object to
- * `../../results/<name>.json` containing the instruction counts and
+ * `<results_dir>/<name>.json` containing the instruction counts and
  * placeholder fields for metrics computed in later pipeline stages
  * (cycles, IPC, mispredictions, stall cycles).
  *
- * @param file_norm  Path to the normalized trace file (used to derive the
- *                   output file name).
- * @param stats      Instruction statistics.
- * @return           0 on success, 1 if the output file could not be opened.
+ * @param file_norm   Full path to the normalized trace file (used to derive
+ *                    the output file name).
+ * @param results_dir Directory where the JSON result file will be written.
+ * @param stats       Instruction statistics.
+ * @return            0 on success, 1 if the output file could not be opened.
  */
-int save_json(std::string file_norm, Stats stats)
+int save_json(std::string file_norm, std::string results_dir, Stats stats)
 {
     nlohmann::json results;
 
@@ -52,10 +53,14 @@ int save_json(std::string file_norm, Stats stats)
     results["stall_cycles_cache_miss"] = "";
     results["stall_cycles_branch_flush"] = "";
 
-    std::ofstream output_file("../../results/" + file_name + ".json");
+    if (!results_dir.empty() && results_dir.back() != '/')
+        results_dir += '/';
+
+    std::string out_path = results_dir + file_name + ".json";
+    std::ofstream output_file(out_path);
     if (!output_file.is_open())
     {
-        std::cerr << "Error: could not open output file ../../results/" << file_name << ".json\n";
+        std::cerr << "Error: could not open output file " << out_path << "\n";
         return 1;
     }
     output_file << results.dump(4);
@@ -67,23 +72,24 @@ int save_json(std::string file_norm, Stats stats)
 /**
  * @brief Parses a normalized RISC-V trace and emits statistics.
  *
- * Reads the normalized trace file at `../../traces/<argv[1]>`, counts
- * instructions by category, prints breakdown, and
- * writes a JSON results file via save_json().
+ * Reads the normalized trace file at @p argv[1], counts instructions by
+ * category, prints a breakdown, and writes a JSON results file via save_json().
  *
- * @param argc  Argument count; must be at least 2.
- * @param argv  argv[1] is the normalized trace file name (basename only).
+ * @param argc  Argument count; must be at least 3.
+ * @param argv  argv[1] is the full path to the normalized trace file;
+ *              argv[2] is the directory where results will be written.
  * @return      0 on success, 1 on usage error, missing file, or empty trace.
  */
 int main(int argc, char *argv[])
 {
-    if (argc < 2)
+    if (argc < 3)
     {
-        std::cerr << "Usage: " << argv[0] << " <processed_trace_file_name>\n";
+        std::cerr << "Usage: " << argv[0] << " <trace_path> <results_dir>\n";
         return 1;
     }
 
-    std::string file_norm = "../../traces/" + static_cast<std::string>(argv[1]);
+    std::string file_norm = argv[1];
+    std::string results_dir = argv[2];
 
     // Open the file in a reading more and check if it was successful
     std::ifstream in_file(file_norm);
@@ -130,7 +136,7 @@ int main(int argc, char *argv[])
     }
 
     // Output file statistics into a json file
-    if (save_json(file_norm, stats) == 1) return 1;
+    if (save_json(file_norm, results_dir, stats) == 1) return 1;
 
     std::cout << "There are " << stats.instructions << " instructions." << "\n";
     std::cout << "There are " << stats.load << " load instructions. " << (static_cast<double>(stats.load * 100) / stats.instructions) << "%\n";
