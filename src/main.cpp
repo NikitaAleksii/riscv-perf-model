@@ -2,72 +2,9 @@
 #include <fstream>
 #include <string>
 #include <sstream>
-#include "nlohmann/json.hpp"
 
-/**
- * @brief Instruction counts derived from a normalized trace file.
- *
- * Each field tracks a distinct RISC-V instruction category. All counts
- * default to zero and are incremented as the trace is parsed line by line.
- */
-struct Stats {
-    long long instructions = 0;
-    long long load = 0;       
-    long long store = 0;        
-    long long branch = 0;      
-    long long jal = 0;         
-    long long jalr = 0;        
-    long long alu = 0;          
-};
-
-/**
- * @brief Serializes instruction statistics to a JSON results file.
- *
- * Gets the benchmark name from @p file_norm by stripping the directory
- * prefix and file extension, then writes a JSON object to
- * `<results_dir>/<name>.json` containing the instruction counts and
- * placeholder fields for metrics computed in later pipeline stages
- * (cycles, IPC, mispredictions, stall cycles).
- *
- * @param file_norm   Full path to the normalized trace file (used to derive
- *                    the output file name).
- * @param results_dir Directory where the JSON result file will be written.
- * @param stats       Instruction statistics.
- * @return            0 on success, 1 if the output file could not be opened.
- */
-int save_json(std::string file_norm, std::string results_dir, Stats stats)
-{
-    nlohmann::json results;
-
-    std::string file_name = file_norm.substr(file_norm.find_last_of('/') + 1);
-    file_name = file_name.erase(file_name.find_first_of('.'));
-
-    results["trace"] = file_name;
-    results["instructions"] = stats.instructions;
-    results["categories"] = {
-        {"LOAD", stats.load}, {"STORE", stats.store}, {"BRANCH", stats.branch}, {"JAL", stats.jal}, {"JALR", stats.jalr}, {"ALU", stats.alu}};
-    results["cycles"] = "";
-    results["ipc"] = "";
-    results["branch_mispredictions"] = "";
-    results["stall_cycles_data_hazard"] = "";
-    results["stall_cycles_cache_miss"] = "";
-    results["stall_cycles_branch_flush"] = "";
-
-    if (!results_dir.empty() && results_dir.back() != '/')
-        results_dir += '/';
-
-    std::string out_path = results_dir + file_name + ".json";
-    std::ofstream output_file(out_path);
-    if (!output_file.is_open())
-    {
-        std::cerr << "Error: could not open output file " << out_path << "\n";
-        return 1;
-    }
-    output_file << results.dump(4);
-    output_file.close();
-
-    return 0;
-}
+#include "pipeline.hpp"
+#include "stats.hpp"
 
 /**
  * @brief Parses a normalized RISC-V trace and emits statistics.
@@ -100,32 +37,43 @@ int main(int argc, char *argv[])
     }
 
     Stats stats;
-    std::string line;
+    PipelineState pipeline;
 
     // Parse instructions in the file
+    std::string line;
     while (getline(in_file, line))
     {
         std::stringstream ss(line);
-        std::string tok;
 
-        ss >> tok;      // skip PC
-        if (!(ss >> tok))
-            continue;   // read TYPE
+        std::string pc_str, type, opcode_str;
+        std::string dst_str, src1_str, src2_str, taken_str, mem_str;
+        if (!(ss >> pc_str >> type >> opcode_str >> dst_str >> src1_str >> src2_str >> taken_str >> mem_str)) continue;
 
+        // Classify instruction type
         stats.instructions += 1;
-
-        if (tok == "LOAD")
+        if (type == "LOAD")
             stats.load += 1;
-        else if (tok == "STORE")
+        else if (type == "STORE")
             stats.store += 1;
-        else if (tok == "BRANCH")
+        else if (type == "BRANCH")
             stats.branch += 1;
-        else if (tok == "JAL")
+        else if (type == "JAL")
             stats.jal += 1;
-        else if (tok == "JALR")
+        else if (type == "JALR")
             stats.jalr += 1;
-        else if (tok == "ALU")
+        else if (type == "ALU")
             stats.alu += 1;
+
+        // Build InstructionInFlight and execute the timing model
+        InstructionInFlight inst;
+        inst.pc = std::stoull(pc_str, nullptr, 16);
+        inst.type = type;
+        inst.dst = (dst_str == "-") ? -1 : std::stoi(dst_str);
+        inst.src1 = (src1_str == "-") ? -1 : std::stoi(src1_str);
+        inst.src2 = (src2_str == "-") ? -1 : std::stoi(src2_str);
+        inst.taken = (taken_str == "Y");
+
+        process_instruction(pipeline, inst);
     }
 
     // Check whether the program has any valid instructions
@@ -136,14 +84,7 @@ int main(int argc, char *argv[])
     }
 
     // Output file statistics into a json file
-    if (save_json(file_norm, results_dir, stats) == 1) return 1;
+    if (save_json(file_norm, results_dir, stats, pipeline) == 1) return 1;
 
-    std::cout << "There are " << stats.instructions << " instructions." << "\n";
-    std::cout << "There are " << stats.load << " load instructions. " << (static_cast<double>(stats.load * 100) / stats.instructions) << "%\n";
-    std::cout << "There are " << stats.store << " store instructions. " << (static_cast<double>(stats.store * 100) / stats.instructions) << "%\n";
-    std::cout << "There are " << stats.branch << " branch instructions. " << (static_cast<double>(stats.branch * 100) / stats.instructions) << "%\n";
-    std::cout << "There are " << stats.jal << " jal instructions. " << (static_cast<double>(stats.jal * 100) / stats.instructions) << "%\n";
-    std::cout << "There are " << stats.jalr << " jalr instructions. " << (static_cast<double>(stats.jalr * 100) / stats.instructions) << "%\n";
-    std::cout << "There are " << stats.alu << " alu instructions. " << (static_cast<double>(stats.alu * 100) / stats.instructions) << "%\n";
     return 0;
 }
