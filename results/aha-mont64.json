@@ -1,0 +1,19 @@
+{
+    "branch_mispredictions": "",
+    "categories": {
+        "ALU": 5190365,
+        "BRANCH": 1293403,
+        "JAL": 3517,
+        "JALR": 4234,
+        "LOAD": 31625,
+        "STORE": 13607
+    },
+    "cycles": 8532748,
+    "instructions": 6536751,
+    "ipc": 0.7660780559791524,
+    "stall_cycles_branch_flush": 1992597,
+    "stall_cycles_cache_miss": "",
+    "stall_cycles_data_hazard": 3399,
+    "total_stall_cycles": 1995996,
+    "trace": "aha-mont64"
+}

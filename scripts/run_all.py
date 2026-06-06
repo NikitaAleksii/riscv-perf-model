@@ -5,7 +5,7 @@ Discovers all normalized trace files (*.norm) in traces/,
 runs the simulator binary on each, and prints a summary table of
 instruction statistics across all benchmarks.
 """
-
+import matplotlib.pyplot as plt
 from pathlib import Path
 import subprocess
 import pandas as pd
@@ -89,6 +89,15 @@ def main():
         sys.exit(1)
 
     df = pd.DataFrame(runs)
+    ax = df.plot(kind='bar', x='trace', y='ipc',
+                 title='IPC Across Benchmarks', figsize=(15, 10),
+                 legend=False, fontsize=14)
+    ax.set_xlabel("Benchmark", fontsize=14)
+    ax.set_ylabel("IPC", fontsize=14)
+    ax.set_ylim(0, 1)
+    ax.tick_params(axis='x', rotation=45)
+    plt.tight_layout()
+    plt.savefig(RESULTS_PATH / 'ipc_plot.png')
     
     print("=== Summary ===")
     summary_cols = ["trace", "instructions", "LOAD_pct", "STORE_pct",
