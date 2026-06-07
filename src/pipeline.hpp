@@ -1,5 +1,6 @@
 #pragma once
 
+#include "predictor.hpp"
 #include <cstdint>
 #include <string>
 
@@ -14,13 +15,23 @@ struct InstructionInFlight {
 
 //
 struct PipelineState {
+    std::unique_ptr<Predictor> predictor;
+    
     long long cycle = 0;
     long long last_completion_cycle = 0;
     long long register_ready_cycle[32] = {0};
+
     long long total_instruction_count = 0;
+
     long long total_stall_cycles = 0;
     long long stall_cycles_data_hazard = 0;
+
+    long long total_branch_count = 0;
+    long long total_branch_mispredict = 0;
     long long stall_cycles_branch_flush = 0;
+
+    long long total_jal_count = 0;
+    long long total_jalr_count = 0;
 };
 
 void initialize_pipeline(PipelineState& pipeline);

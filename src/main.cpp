@@ -6,6 +6,13 @@
 #include "pipeline.hpp"
 #include "stats.hpp"
 
+std::unique_ptr<Predictor> set_predictor(const std::string& predictor_name) {
+    if (predictor_name == "not_taken") return std::make_unique<AlwaysNotTakenPredictor>();
+    if (predictor_name == "bimodal") return std::make_unique<BimodalPredictor>();
+    if (predictor_name == "gshare") return std::make_unique<GsharePredictor>();
+    else return nullptr; 
+}
+
 /**
  * @brief Parses a normalized RISC-V trace and emits statistics.
  *
@@ -38,6 +45,12 @@ int main(int argc, char *argv[])
 
     Stats stats;
     PipelineState pipeline;
+
+    pipeline.predictor = set_predictor("gshare");
+    if (pipeline.predictor == nullptr) {
+        std::cerr << "Error: predictor not supported \n";
+        return 1;
+    }
 
     // Parse instructions in the file
     std::string line;

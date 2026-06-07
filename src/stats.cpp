@@ -35,7 +35,8 @@ int save_json(const std::string& file_norm, const std::string& results_dir, cons
         {"LOAD", stats.load}, {"STORE", stats.store}, {"BRANCH", stats.branch}, {"JAL", stats.jal}, {"JALR", stats.jalr}, {"ALU", stats.alu}};
     results["cycles"] = pipeline.last_completion_cycle;
     results["ipc"] = static_cast<double>(pipeline.total_instruction_count) / pipeline.last_completion_cycle;
-    results["branch_mispredictions"] = "";
+    results["branch_mispredictions"] = pipeline.total_branch_mispredict;
+    results["branch_mispredictions_rate"] = 100.0 * pipeline.total_branch_mispredict / pipeline.total_branch_count;
     results["total_stall_cycles"] = pipeline.total_stall_cycles;
     results["stall_cycles_data_hazard"] = pipeline.stall_cycles_data_hazard;
     results["stall_cycles_cache_miss"] = "";

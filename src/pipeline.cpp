@@ -1,5 +1,8 @@
 #include "pipeline.hpp"
+#include "predictor.hpp"
 #include <algorithm>
+
+const int MISPREDICT_PENALTY = 2;
 
 void initialize_pipeline(PipelineState& pipeline) {
     pipeline.cycle = 0;
@@ -30,13 +33,26 @@ void process_instruction(PipelineState& pipeline, const InstructionInFlight& ins
     // BRANCH (taken): 2-cycle penalty (flush IF + ID).
     // JAL: 1-cycle penalty (target resolved at decode).
     // JALR: 2-cycle penalty (target resolved at execute).
+
     int branch_penalty = 0;
-    if (instr.type == "BRANCH" && instr.taken)
-        branch_penalty = 2;
-    else if (instr.type == "JAL")
+    if (instr.type == "BRANCH") {
+        bool predict_taken = pipeline.predictor->predict(instr.pc);
+        bool actually_taken = instr.taken;
+        pipeline.total_branch_count++;
+        if (predict_taken != actually_taken) {
+            branch_penalty = MISPREDICT_PENALTY;
+            pipeline.total_branch_mispredict++;
+        }
+        pipeline.predictor->update(instr.pc, actually_taken);
+    }
+    else if (instr.type == "JAL") {
         branch_penalty = 1;
-    else if (instr.type == "JALR")
-        branch_penalty = 2;
+        pipeline.total_jal_count++;
+    }
+    else if (instr.type == "JALR") {
+        branch_penalty = MISPREDICT_PENALTY;
+        pipeline.total_jalr_count++;
+    }
 
     // Update pipeline state
     pipeline.cycle = earliest + branch_penalty;
