@@ -31,7 +31,7 @@ private:
 // === Gshare Predictor ===
 class GsharePredictor: public Predictor {
 public:
-    explicit GsharePredictor(int table_size = 1024, int history_bits = 10);
+    explicit GsharePredictor(int table_size = 1024);
     bool predict(uint64_t pc) override;
     void update(uint64_t pc, bool taken) override;
 private:

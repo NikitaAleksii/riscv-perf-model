@@ -22,7 +22,7 @@
  * @return             0 on success, 1 if the output file could not be opened.
  */
 
-int save_json(const std::string& file_norm, const std::string& results_dir, const Stats stats, const PipelineState& pipeline)
+int save_json(const std::string& file_norm, const std::string& results_dir, const Stats& stats, const PipelineState& pipeline)
 {
     nlohmann::json results;
 
@@ -36,7 +36,8 @@ int save_json(const std::string& file_norm, const std::string& results_dir, cons
     results["cycles"] = pipeline.last_completion_cycle;
     results["ipc"] = static_cast<double>(pipeline.total_instruction_count) / pipeline.last_completion_cycle;
     results["branch_mispredictions"] = pipeline.total_branch_mispredict;
-    results["branch_mispredictions_rate"] = 100.0 * pipeline.total_branch_mispredict / pipeline.total_branch_count;
+    results["branch_mispredictions_rate"] = (pipeline.total_branch_count > 0) ? 100.0 * pipeline.total_branch_mispredict / pipeline.total_branch_count
+                                            : 0.0;
     results["total_stall_cycles"] = pipeline.total_stall_cycles;
     results["stall_cycles_data_hazard"] = pipeline.stall_cycles_data_hazard;
     results["stall_cycles_cache_miss"] = "";

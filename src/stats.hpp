@@ -28,5 +28,5 @@ struct Stats {
  * @param pipeline     Timing model results (cycles, stalls, etc.).
  * @return             0 on success, 1 if the output file could not be opened.
  */
-int save_json(const std::string& file_norm, const std::string& results_dir, const Stats stats, const PipelineState& pipeline);
+int save_json(const std::string& file_norm, const std::string& results_dir, const Stats& stats, const PipelineState& pipeline);
 

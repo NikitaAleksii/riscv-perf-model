@@ -10,7 +10,7 @@ std::unique_ptr<Predictor> set_predictor(const std::string& predictor_name) {
     if (predictor_name == "not_taken") return std::make_unique<AlwaysNotTakenPredictor>();
     if (predictor_name == "bimodal") return std::make_unique<BimodalPredictor>();
     if (predictor_name == "gshare") return std::make_unique<GsharePredictor>();
-    else return nullptr; 
+    return nullptr;
 }
 
 /**
@@ -28,12 +28,13 @@ int main(int argc, char *argv[])
 {
     if (argc < 3)
     {
-        std::cerr << "Usage: " << argv[0] << " <trace_path> <results_dir>\n";
+        std::cerr << "Usage: " << argv[0] << " <trace_path> <results_dir> [predictor: not_taken|bimodal|gshare]\n";
         return 1;
     }
 
     std::string file_norm = argv[1];
     std::string results_dir = argv[2];
+    std::string predictor_name = (argc >= 4) ? argv[3] : "gshare";
 
     // Open the file in a reading more and check if it was successful
     std::ifstream in_file(file_norm);
@@ -45,8 +46,9 @@ int main(int argc, char *argv[])
 
     Stats stats;
     PipelineState pipeline;
+    initialize_pipeline(pipeline);
 
-    pipeline.predictor = set_predictor("gshare");
+    pipeline.predictor = set_predictor(predictor_name);
     if (pipeline.predictor == nullptr) {
         std::cerr << "Error: predictor not supported \n";
         return 1;

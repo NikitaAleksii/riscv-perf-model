@@ -39,8 +39,8 @@ void BimodalPredictor::update(uint64_t pc, bool taken) {
 }
 
 // === Gshare Predictor ===
-GsharePredictor::GsharePredictor(int table_size, int history_bits)
-: counters(table_size, 1), history_bits(history_bits), history_mask((1ULL << history_bits) - 1) {
+GsharePredictor::GsharePredictor(int table_size)
+: counters(table_size, 1), history_bits(static_cast<int>(std::log2(table_size))), history_mask((1ULL << history_bits) - 1) {
     assert((table_size & (table_size - 1)) == 0 && "table_size must be a power of 2");
 }
 
