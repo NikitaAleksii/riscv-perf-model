@@ -38,3 +38,22 @@ void BimodalPredictor::update(uint64_t pc, bool taken) {
     }
 }
 
+// === Gshare Predictor ===
+GsharePredictor::GsharePredictor(int table_size, int history_bits)
+: counters(table_size, 1), history_bits(history_bits), history_mask((1ULL << history_bits) - 1) {
+    assert((table_size & (table_size - 1)) == 0 && "table_size must be a power of 2");
+}
+
+bool GsharePredictor::predict(uint64_t pc) {
+    return counters[index(pc)] >= 2;
+}
+
+void GsharePredictor::update(uint64_t pc, bool taken) {
+    uint8_t& counter = counters[index(pc)];
+    if (taken) {
+        if (counter < 3) counter += 1;
+    } else {
+        if (counter > 0) counter -= 1;
+    }
+    history = ((history << 1) | (taken ? 1 : 0)) & history_mask; 
+}
