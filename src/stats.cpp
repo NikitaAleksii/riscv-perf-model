@@ -43,8 +43,13 @@ int save_json(const std::string& file_norm, const std::string& results_dir, cons
     results["dcache_accesses"] = pipeline.dcache->accesses;
     results["dcache_hits"] = pipeline.dcache->hits;
     results["dcache_misses"] = pipeline.dcache->misses;
-    results["stall_cycles_cache_miss"] = pipeline.stall_cycles_cache_miss;
     results["dcache_mpki"] = 1000.0 * pipeline.dcache->misses / stats.instructions;
+    results["stall_cycles_dcache_miss"] = pipeline.stall_cycles_dcache_miss;
+    results["icache_accesses"] = pipeline.icache->accesses;
+    results["icache_hits"] = pipeline.icache->hits;
+    results["icache_misses"] = pipeline.icache->misses;
+    results["icache_mpki"] = 1000.0 * pipeline.icache->misses / stats.instructions;
+    results["stall_cycles_icache_miss"] = pipeline.stall_cycles_icache_miss;
     results["stall_cycles_branch_flush"] = pipeline.stall_cycles_branch_flush;
 
     std::string dir = results_dir;

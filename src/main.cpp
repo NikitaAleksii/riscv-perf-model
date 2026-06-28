@@ -13,6 +13,18 @@ std::unique_ptr<Predictor> set_predictor(const std::string& predictor_name) {
     return nullptr;
 }
 
+// Build a Cache from a compact "size,assoc,line" spec. Empty or missing fields
+// fall back to the L1 defaults (32 KB, 8-way, 64 B line).
+std::unique_ptr<Cache> make_cache(const std::string& spec) {
+    int size = 32 * 1024, assoc = 8, line = 64;
+    std::stringstream ss(spec);
+    std::string tok;
+    if (std::getline(ss, tok, ',') && !tok.empty()) size  = std::stoi(tok);
+    if (std::getline(ss, tok, ',') && !tok.empty()) assoc = std::stoi(tok);
+    if (std::getline(ss, tok, ',') && !tok.empty()) line  = std::stoi(tok);
+    return std::make_unique<Cache>(size, line, assoc);   // Cache(size, line, assoc)
+}
+
 /**
  * @brief Parses a normalized RISC-V trace and emits statistics.
  *
@@ -28,7 +40,7 @@ int main(int argc, char *argv[])
 {
     if (argc < 3)
     {
-        std::cerr << "Usage: " << argv[0] << " <trace_path> <results_dir> [predictor: not_taken|bimodal|gshare] [dcache_size] [dcache_assoc] [dcache_line]\n";
+        std::cerr << "Usage: " << argv[0] << " <trace_path> <results_dir> [predictor: not_taken|bimodal|gshare] [dcache=size,assoc,line] [icache=size,assoc,line]\n";
         return 1;
     }
 
@@ -36,10 +48,9 @@ int main(int argc, char *argv[])
     std::string results_dir = argv[2];
     std::string predictor_name = (argc >= 4) ? argv[3] : "gshare";
 
-    // L1 D-cache config (defaults: 32 KB, 8-way, 64 B line)
-    int dcache_size  = (argc >= 5) ? std::stoi(argv[4]) : 32 * 1024;
-    int dcache_assoc = (argc >= 6) ? std::stoi(argv[5]) : 8;
-    int dcache_line  = (argc >= 7) ? std::stoi(argv[6]) : 64;
+    // L1 cache configs as compact "size,assoc,line" specs (default 32 KB, 8-way, 64 B).
+    std::string dcache_spec = (argc >= 5) ? argv[4] : "";
+    std::string icache_spec = (argc >= 6) ? argv[5] : "";
 
     // Open the file in a reading more and check if it was successful
     std::ifstream in_file(file_norm);
@@ -59,8 +70,8 @@ int main(int argc, char *argv[])
         return 1;
     }
 
-    // Cache constructor args are (cache_size, line_size, associativity).
-    pipeline.dcache = std::make_unique<Cache>(dcache_size, dcache_line, dcache_assoc);
+    pipeline.dcache = make_cache(dcache_spec);
+    pipeline.icache = make_cache(icache_spec);
 
     // Parse instructions in the file
     std::string line;

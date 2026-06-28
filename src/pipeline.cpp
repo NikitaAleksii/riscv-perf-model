@@ -51,24 +51,31 @@ void process_instruction(PipelineState& pipeline, const InstructionInFlight& ins
     }
 
     // L1 D-cache probe
-    int cache_penalty = 0;
+    int dcache_penalty = 0;
     if (instr.type == "LOAD" || instr.type == "STORE") {
         if (!pipeline.dcache->access(instr.mem_addr)) {
-            cache_penalty = CACHE_MISS_PENALTY;
+            dcache_penalty = CACHE_MISS_PENALTY;
         }
     }
 
-    long long ready = earliest + instr_latency + cache_penalty;
+    // L1 I-cache probe — every instruction is fetched.
+    int icache_penalty = 0;
+    if (!pipeline.icache->access(instr.pc)) {
+        icache_penalty = CACHE_MISS_PENALTY;
+    }
+
+    long long ready = earliest + instr_latency + dcache_penalty + icache_penalty;
 
     // Assign when the result of a register will be ready
     if (instr.dst > 0) pipeline.register_ready_cycle[instr.dst] = ready;
 
     // Update pipeline state
-    pipeline.cycle = earliest + branch_penalty + cache_penalty;
+    pipeline.cycle = earliest + branch_penalty + dcache_penalty + icache_penalty;
     pipeline.last_completion_cycle = ready;
     pipeline.total_instruction_count += 1;
-    pipeline.total_stall_cycles += stalls + branch_penalty + cache_penalty;
+    pipeline.total_stall_cycles += stalls + branch_penalty + dcache_penalty + icache_penalty;
     pipeline.stall_cycles_data_hazard += stalls;
     pipeline.stall_cycles_branch_flush += branch_penalty;
-    pipeline.stall_cycles_cache_miss += cache_penalty;
+    pipeline.stall_cycles_dcache_miss += dcache_penalty;
+    pipeline.stall_cycles_icache_miss += icache_penalty;
 }

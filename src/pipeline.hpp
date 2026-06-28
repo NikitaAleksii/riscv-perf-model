@@ -16,10 +16,11 @@ struct InstructionInFlight {
     std::int64_t mem_addr;
 };
 
-//
+// State of the current pipeline that includes a predictor, caches, and counters
 struct PipelineState {
     std::unique_ptr<Predictor> predictor;
     std::unique_ptr<Cache> dcache;
+    std::unique_ptr<Cache> icache;
 
     long long cycle = 0;
     long long last_completion_cycle = 0;
@@ -33,7 +34,9 @@ struct PipelineState {
     long long total_branch_count = 0;
     long long total_branch_mispredict = 0;
     long long stall_cycles_branch_flush = 0;
-    long long stall_cycles_cache_miss = 0;
+
+    long long stall_cycles_dcache_miss = 0;
+    long long stall_cycles_icache_miss = 0;
 
     long long total_jal_count = 0;
     long long total_jalr_count = 0;
