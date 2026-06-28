@@ -33,6 +33,7 @@ struct PipelineState {
     long long total_branch_count = 0;
     long long total_branch_mispredict = 0;
     long long stall_cycles_branch_flush = 0;
+    long long stall_cycles_cache_miss = 0;
 
     long long total_jal_count = 0;
     long long total_jalr_count = 0;

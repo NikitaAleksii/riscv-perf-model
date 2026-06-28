@@ -17,12 +17,16 @@ PROJECT_ROOT = SCRIPT_DIR.parent
 TRACES_PATH = PROJECT_ROOT / "traces"
 SIMULATION_PATH = PROJECT_ROOT / "src" / "build" / "main"
 RESULTS_PATH = PROJECT_ROOT / "results"
+PREDICTOR = "gshare"
+DCACHE_SIZE = "2048"
+DCACHE_ASSOC = "8"
+DCACHE_LINE = "64"
 
 def run_simulation(trace_path):
     """Run the simulator on a single trace file and return the parsed JSON result, or None on failure."""
     try:
         result = subprocess.run(
-            [SIMULATION_PATH, trace_path, RESULTS_PATH],
+            [SIMULATION_PATH, trace_path, RESULTS_PATH, PREDICTOR, DCACHE_SIZE, DCACHE_ASSOC, DCACHE_LINE],
             text=True,
             capture_output=True
         )
