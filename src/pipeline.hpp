@@ -1,8 +1,10 @@
 #pragma once
 
 #include "predictor.hpp"
+#include "cache.hpp"
 #include <cstdint>
 #include <string>
+#include <memory>
 
 // Instruction currently in flight
 struct InstructionInFlight {
@@ -17,7 +19,8 @@ struct InstructionInFlight {
 //
 struct PipelineState {
     std::unique_ptr<Predictor> predictor;
-    
+    std::unique_ptr<Cache> dcache;
+
     long long cycle = 0;
     long long last_completion_cycle = 0;
     long long register_ready_cycle[32] = {0};
@@ -33,10 +36,6 @@ struct PipelineState {
 
     long long total_jal_count = 0;
     long long total_jalr_count = 0;
-
-    long long total_cache_accesses = 0;
-    long long total_cache_hits = 0;
-    long long total_cache_misses = 0;
 };
 
 void initialize_pipeline(PipelineState& pipeline);

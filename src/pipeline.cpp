@@ -29,11 +29,10 @@ void process_instruction(PipelineState& pipeline, const InstructionInFlight& ins
     // Assign when the result of a register will be ready
     if (instr.dst > 0) pipeline.register_ready_cycle[instr.dst] = ready;
     
-    // Branch/jump control hazard penalty: flush wrongly-fetched instructions.
-    // BRANCH (taken): 2-cycle penalty (flush IF + ID).
-    // JAL: 1-cycle penalty (target resolved at decode).
-    // JALR: 2-cycle penalty (target resolved at execute).
-
+    // Branch and jump control hazard penalty: flush wrongly-fetched instructions
+    // BRANCH (taken): 2-cycle penalty (flush IF + ID)
+    // JAL: 1-cycle penalty
+    // JALR: 2-cycle penalty
     int branch_penalty = 0;
     if (instr.type == "BRANCH") {
         bool predict_taken = pipeline.predictor->predict(instr.pc);
@@ -52,6 +51,11 @@ void process_instruction(PipelineState& pipeline, const InstructionInFlight& ins
     else if (instr.type == "JALR") {
         branch_penalty = MISPREDICT_PENALTY;
         pipeline.total_jalr_count++;
+    }
+
+    // L1 D-cache probe
+    if (instr.type == "LOAD" || instr.type == "STORE") {
+        pipeline.dcache->access(instr.mem_addr);
     }
 
     // Update pipeline state

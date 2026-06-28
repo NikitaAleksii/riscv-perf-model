@@ -9,7 +9,7 @@ struct Predictor {
     virtual void update(uint64_t pc, bool taken) = 0;
 };
 
-// === Always Not Taken Predictor
+// === Always Not Taken Predictor ===
 struct AlwaysNotTakenPredictor: public Predictor {
     bool predict(uint64_t pc) override;
     void update(uint64_t pc, bool taken) override;

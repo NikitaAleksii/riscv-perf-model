@@ -28,13 +28,18 @@ int main(int argc, char *argv[])
 {
     if (argc < 3)
     {
-        std::cerr << "Usage: " << argv[0] << " <trace_path> <results_dir> [predictor: not_taken|bimodal|gshare]\n";
+        std::cerr << "Usage: " << argv[0] << " <trace_path> <results_dir> [predictor: not_taken|bimodal|gshare] [dcache_size] [dcache_assoc] [dcache_line]\n";
         return 1;
     }
 
     std::string file_norm = argv[1];
     std::string results_dir = argv[2];
     std::string predictor_name = (argc >= 4) ? argv[3] : "gshare";
+
+    // L1 D-cache config (defaults: 32 KB, 8-way, 64 B line)
+    int dcache_size  = (argc >= 5) ? std::stoi(argv[4]) : 32 * 1024;
+    int dcache_assoc = (argc >= 6) ? std::stoi(argv[5]) : 8;
+    int dcache_line  = (argc >= 7) ? std::stoi(argv[6]) : 64;
 
     // Open the file in a reading more and check if it was successful
     std::ifstream in_file(file_norm);
@@ -53,6 +58,9 @@ int main(int argc, char *argv[])
         std::cerr << "Error: predictor not supported \n";
         return 1;
     }
+
+    // Cache constructor args are (cache_size, line_size, associativity).
+    pipeline.dcache = std::make_unique<Cache>(dcache_size, dcache_line, dcache_assoc);
 
     // Parse instructions in the file
     std::string line;
