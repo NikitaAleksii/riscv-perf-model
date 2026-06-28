@@ -87,6 +87,7 @@ int main(int argc, char *argv[])
         inst.src1 = (src1_str == "-") ? -1 : std::stoi(src1_str);
         inst.src2 = (src2_str == "-") ? -1 : std::stoi(src2_str);
         inst.taken = (taken_str == "Y");
+        inst.mem_addr = (mem_str == "-") ? 0 : std::stoull(mem_str, nullptr, 16);
 
         process_instruction(pipeline, inst);
     }

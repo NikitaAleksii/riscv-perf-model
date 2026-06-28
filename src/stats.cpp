@@ -40,7 +40,9 @@ int save_json(const std::string& file_norm, const std::string& results_dir, cons
                                             : 0.0;
     results["total_stall_cycles"] = pipeline.total_stall_cycles;
     results["stall_cycles_data_hazard"] = pipeline.stall_cycles_data_hazard;
-    results["stall_cycles_cache_miss"] = "";
+    results["cache_hit"] = "";
+    results["cache_miss"] = "";
+    results["cache_accesses"] = "";
     results["stall_cycles_branch_flush"] = pipeline.stall_cycles_branch_flush;
 
     std::string dir = results_dir;

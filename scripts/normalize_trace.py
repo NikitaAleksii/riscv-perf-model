@@ -18,7 +18,7 @@ Output: one line per user-space instruction with the fields:
   - DST      : destination register index, or '-' if none
   - SRC1/2   : source register indices, or '-' if unused
   - TAKEN    : 'Y' | 'N' for branches, '-' otherwise
-  - MEM_ADDR : always '-' (in process ...)
+  - MEM_ADDR : memory address
 
 Kernel-space instructions (PC >= 0xffffffc000000000) are  dropped.
 Both 32-bit standard and 16-bit compressed (RVC) encodings are supported.
@@ -208,7 +208,11 @@ def normalize(path_r, path_w):
 
             instr_type = categorize_by_opcode(encoding, opcode)
             rs1, rs2, dst = decode_sources(encoding, opcode)
-            taken_memory = "-"
+            mem_addr = "-"
+            
+            if "mem" in fields:
+                mem_address = fields[fields.index("mem") + 1]
+                mem_addr = mem_address
 
             # Determines whether branch was taken provided that we have previous instruction
             width = 2 if (encoding & 0b11) != 3 else 4
@@ -216,7 +220,7 @@ def normalize(path_r, path_w):
                 taken = compute_taken(prev, pc_int)
                 emit(out_file, prev, taken)
 
-            prev = (pc, instr_type, encoding, dst, rs1, rs2, width, pc_int)
+            prev = (pc, instr_type, encoding, dst, rs1, rs2, width, pc_int, mem_addr)
 
         # Flush the last instruction
         if prev is not None:
@@ -225,7 +229,7 @@ def normalize(path_r, path_w):
 
 def compute_taken(prev, next_pc):
     """Returns whether the branch was taken or not. Chose N and Y instead of NOT_TAKEN and TAKEN, respectively, to optimize the speed of paring in C++."""
-    pc, instr_type, encoding, dst, rs1, rs2, width, pc_int = prev
+    pc, instr_type, encoding, dst, rs1, rs2, width, pc_int, mem_addr = prev
     if instr_type != "BRANCH":
         return "-"
     jump = pc_int + width
@@ -236,8 +240,8 @@ def compute_taken(prev, next_pc):
 
 def emit(out_file, prev, taken):
     """Emits a normalized instruction into the output file"""
-    pc, instr_type, encoding, dst, rs1, rs2, width, pc_int = prev
-    out_file.write(f"{pc} {instr_type} 0x{encoding:08x} {dst} {rs1} {rs2} {taken} -\n")
+    pc, instr_type, encoding, dst, rs1, rs2, width, pc_int, mem_addr = prev
+    out_file.write(f"{pc} {instr_type} 0x{encoding:08x} {dst} {rs1} {rs2} {taken} {mem_addr}\n")
 
 
 def main():

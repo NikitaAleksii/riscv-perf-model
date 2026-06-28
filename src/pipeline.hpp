@@ -11,6 +11,7 @@ struct InstructionInFlight {
     int dst;
     int src1; int src2;
     bool taken;  
+    std::int64_t mem_addr;
 };
 
 //
@@ -32,6 +33,10 @@ struct PipelineState {
 
     long long total_jal_count = 0;
     long long total_jalr_count = 0;
+
+    long long total_cache_accesses = 0;
+    long long total_cache_hits = 0;
+    long long total_cache_misses = 0;
 };
 
 void initialize_pipeline(PipelineState& pipeline);

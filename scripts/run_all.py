@@ -59,6 +59,7 @@ def flatten_json(json_data):
         "cycles":             json_data.get("cycles"),
         "ipc":                json_data.get("ipc"),
         "branch_mispredictions": json_data.get("branch_mispredictions"),
+        "branch_mispredictions_rate": json_data.get("branch_mispredictions_rate")
     }
     
     n = flat["instructions"]
