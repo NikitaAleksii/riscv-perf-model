@@ -51,6 +51,8 @@ int save_json(const std::string& file_norm, const std::string& results_dir, cons
     results["icache_mpki"] = 1000.0 * pipeline.icache->misses / stats.instructions;
     results["stall_cycles_icache_miss"] = pipeline.stall_cycles_icache_miss;
     results["stall_cycles_branch_flush"] = pipeline.stall_cycles_branch_flush;
+    results["ras_hits"] = pipeline.ras_hits;
+    results["ras_misses"] = pipeline.ras_misses;
 
     std::string dir = results_dir;
     if (!results_dir.empty() && results_dir.back() != '/') dir += '/';

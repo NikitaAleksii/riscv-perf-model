@@ -20,7 +20,8 @@ Output: one line per user-space instruction with the fields:
   - TAKEN    : 'Y' | 'N' for branches, '-' otherwise
   - MEM_ADDR : memory address
 
-Kernel-space instructions (PC >= 0xffffffc000000000) are  dropped.
+Only user-mode (privilege 0) instructions are kept; supervisor (kernel) and
+machine-mode (firmware / trap handler) instructions are dropped.
 Both 32-bit standard and 16-bit compressed (RVC) encodings are supported.
 
 Usage:
@@ -133,8 +134,10 @@ def decode_sources_compressed(encoding):
             if rd_full == 2:                    # c.addi16sp (rd = sp)
                 return (2, "-", 2)
             return ("-", "-", rd_full)          # c.lui
-        if funct3 == 0b100:                     # ALU ops: c.sub, c.xor, c.or, c.and, c.srli, c.srai, c.andi
-            return (cr3(7), cr3(2), cr3(7))
+        if funct3 == 0b100:
+            if ((encoding >> 10) & 0b11) == 0b11:   # c.sub / c.xor / c.or / c.and
+                return (cr3(7), cr3(2), cr3(7))
+            return (cr3(7), "-", cr3(7))            # c.srli / c.srai / c.andi (no rs2)
         if funct3 == 0b101:                     # c.j — no registers
             return ("-", "-", "-")
         if funct3 == 0b110 or funct3 == 0b111:  # c.beqz, c.bnez
@@ -201,9 +204,9 @@ def normalize(path_r, path_w):
 
             pc = fields[3]
 
-            # Filter kernel instructions
+            # Keep only user-mode benchmark code
             pc_int = int(pc, 16)
-            if pc_int >= 0xffffffc000000000:
+            if fields[2] != "0":
                 continue
 
             instr_type = categorize_by_opcode(encoding, opcode)

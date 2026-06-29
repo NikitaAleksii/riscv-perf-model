@@ -8,6 +8,7 @@
 
 // Instruction currently in flight
 struct InstructionInFlight {
+    int width;
     std::int64_t pc;
     std::string type;
     int dst;
@@ -21,6 +22,10 @@ struct PipelineState {
     std::unique_ptr<Predictor> predictor;
     std::unique_ptr<Cache> dcache;
     std::unique_ptr<Cache> icache;
+
+    std::vector<long long> ras;     // return-address stack
+    long long ras_hits = 0;
+    long long ras_misses = 0;
 
     long long cycle = 0;
     long long last_completion_cycle = 0;

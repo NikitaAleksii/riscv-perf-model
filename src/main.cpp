@@ -107,6 +107,7 @@ int main(int argc, char *argv[])
         inst.src2 = (src2_str == "-") ? -1 : std::stoi(src2_str);
         inst.taken = (taken_str == "Y");
         inst.mem_addr = (mem_str == "-") ? 0 : std::stoull(mem_str, nullptr, 16);
+        inst.width = ((std::stoul(opcode_str, nullptr, 16) & 0b11) == 0b11) ? 4 : 2;
 
         process_instruction(pipeline, inst);
     }

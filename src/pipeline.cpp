@@ -4,6 +4,7 @@
 
 const int MISPREDICT_PENALTY = 2;
 const int CACHE_MISS_PENALTY = 30;
+const int RAS_SIZE = 16;
 
 void initialize_pipeline(PipelineState& pipeline) {
     pipeline.cycle = 0;
@@ -27,9 +28,7 @@ void process_instruction(PipelineState& pipeline, const InstructionInFlight& ins
     int instr_latency = (instr.type == "LOAD") ? 2 : 1;
 
     // Branch and jump control hazard penalty: flush wrongly-fetched instructions
-    // BRANCH (taken): 2-cycle penalty (flush IF + ID)
-    // JAL: 1-cycle penalty
-    // JALR: 2-cycle penalty
+    auto is_link = [](int r){return r == 1 || r == 5;}; // check if this is a link register (x1 or x5)
     int branch_penalty = 0;
     if (instr.type == "BRANCH") {
         bool predict_taken = pipeline.predictor->predict(instr.pc);
@@ -42,12 +41,30 @@ void process_instruction(PipelineState& pipeline, const InstructionInFlight& ins
         pipeline.predictor->update(instr.pc, actually_taken);
     }
     else if (instr.type == "JAL") {
-        branch_penalty = 1;
         pipeline.total_jal_count++;
+        if (is_link(instr.dst)) {
+            if ((int)pipeline.ras.size() == RAS_SIZE) {
+                pipeline.ras.erase(pipeline.ras.begin());
+            }
+            pipeline.ras.push_back(instr.pc + instr.width);
+        }
     }
     else if (instr.type == "JALR") {
-        branch_penalty = MISPREDICT_PENALTY;
         pipeline.total_jalr_count++;
+        bool ret = (!is_link(instr.dst) && is_link(instr.src1)); // jalr x0, ra  -> return
+        bool call = is_link(instr.dst); // jalr ra, rs1 -> indirect call
+        if (ret) {
+            if (!pipeline.ras.empty()) {
+                pipeline.ras.pop_back();
+                pipeline.ras_hits++;
+            } else {
+                branch_penalty = MISPREDICT_PENALTY;
+                pipeline.ras_misses++;
+            }
+        } else if (call) {
+            if ((int) pipeline.ras.size() == RAS_SIZE) pipeline.ras.erase(pipeline.ras.begin());
+            pipeline.ras.push_back(instr.pc + instr.width);
+        }
     }
 
     // L1 D-cache probe
